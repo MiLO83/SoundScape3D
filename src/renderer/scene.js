@@ -81,6 +81,10 @@ export class Scene {
     return this.renderer;
   }
 
+  getCanvas() {
+    return this.renderer.domElement;
+  }
+
   getScene() {
     return this.scene;
   }

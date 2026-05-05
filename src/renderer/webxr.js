@@ -1,5 +1,5 @@
 // WebXR Manager for SoundScape3D
-// Handles AR passthrough mode on Quest
+// Handles AR passthrough mode on Quest with depth sensing
 
 export class WebXRManager {
   constructor(scene) {
@@ -8,6 +8,10 @@ export class WebXRManager {
     this.xrSession = null;
     this.xrRefSpace = null;
     this.isPresenting = false;
+
+    // Depth sensing
+    this.depthSensing = null;
+    this.depthSupported = false;
 
     // Check for WebXR support
     this.isSupported = false;
@@ -29,20 +33,33 @@ export class WebXRManager {
     }
   }
 
+  /**
+   * Set depth sensing instance for updates
+   * @param {DepthSensing} depthSensing
+   */
+  setDepthSensing(depthSensing) {
+    this.depthSensing = depthSensing;
+  }
+
   async startSession() {
     if (!navigator.xr) {
       throw new Error('WebXR not supported');
     }
 
     try {
-      // Request AR session with passthrough
+      // Request AR session with passthrough and depth sensing
       const sessionOptions = {
         requiredFeatures: ['local-floor'],
         optionalFeatures: [
           'bounded-floor',
           'hand-tracking',
-          'hit-test'
-        ]
+          'hit-test',
+          'depth-sensing'
+        ],
+        depthSensing: {
+          usagePreference: ['cpu-optimized', 'gpu-optimized'],
+          dataFormatPreference: ['luminance-alpha', 'float32']
+        }
       };
 
       this.xrSession = await navigator.xr.requestSession('immersive-ar', sessionOptions);
@@ -58,6 +75,12 @@ export class WebXRManager {
 
       // Enable AR mode in scene (hide grid, make background transparent)
       this.scene.setARMode(true);
+
+      // Initialize depth sensing if available
+      if (this.depthSensing && this.xrSession.depthUsage) {
+        this.depthSupported = this.depthSensing.init(this.xrSession);
+        console.log(`[WebXR] Depth sensing: ${this.depthSupported ? 'enabled' : 'not available'}`);
+      }
 
       this.isPresenting = true;
       console.log('[WebXR] AR session started');
@@ -110,6 +133,13 @@ export class WebXRManager {
       z: orientation.z,
       w: orientation.w
     };
+
+    // Update depth sensing
+    if (this.depthSensing && this.depthSupported) {
+      for (const view of pose.views) {
+        this.depthSensing.update(frame, this.xrRefSpace, view);
+      }
+    }
   }
 
   getViewerPosition() {

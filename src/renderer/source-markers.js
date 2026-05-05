@@ -43,25 +43,31 @@ export class SourceMarkers {
   createMarker(id, source) {
     const color = new THREE.Color(source.color);
 
-    // Main sphere
+    // Main sphere - always on top, no depth testing
     const sphereMaterial = new THREE.MeshBasicMaterial({
       color: color,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.8,
+      depthTest: false,
+      depthWrite: false
     });
     const sphere = new THREE.Mesh(this.sphereGeometry, sphereMaterial);
+    sphere.renderOrder = 999;
 
-    // Pulsing ring
+    // Pulsing ring - always on top
     const ringMaterial = new THREE.MeshBasicMaterial({
       color: color,
       transparent: true,
       opacity: 0.5,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      depthTest: false,
+      depthWrite: false
     });
     const ring = new THREE.Mesh(this.ringGeometry, ringMaterial);
     ring.rotation.x = -Math.PI / 2;  // Face up
+    ring.renderOrder = 998;
 
-    // Direction line (pointing to source from origin)
+    // Direction line (pointing to source from origin) - always on top
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, 0, 0)
@@ -69,14 +75,18 @@ export class SourceMarkers {
     const lineMaterial = new THREE.LineBasicMaterial({
       color: color,
       transparent: true,
-      opacity: 0.3
+      opacity: 0.3,
+      depthTest: false,
+      depthWrite: false
     });
     const line = new THREE.Line(lineGeometry, lineMaterial);
+    line.renderOrder = 997;
 
-    // Group for all marker elements
+    // Group for all marker elements - render on top of everything
     const group = new THREE.Group();
     group.add(sphere);
     group.add(ring);
+    group.renderOrder = 999;
 
     // Position marker
     group.position.set(source.position.x, source.position.y, source.position.z);
